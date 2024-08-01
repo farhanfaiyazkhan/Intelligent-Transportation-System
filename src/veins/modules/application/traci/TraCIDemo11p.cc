@@ -1,27 +1,4 @@
-//
-// Copyright (C) 2006-2011 Christoph Sommer <christoph.sommer@uibk.ac.at>
-//
-// Documentation for these modules is at http://veins.car2x.org/
-//
-// SPDX-License-Identifier: GPL-2.0-or-later
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-//
-
 #include "veins/modules/application/traci/TraCIDemo11p.h"
-
 #include "veins/modules/application/traci/TraCIDemo11pMessage_m.h"
 
 using namespace veins;
@@ -35,6 +12,18 @@ void TraCIDemo11p::initialize(int stage)
         sentMessage = false;
         lastDroveAt = simTime();
         currentSubscribedServiceId = -1;
+
+        // Open log file
+        logFile.open("C:/Dev/veins/examples/veins/traCIDemoLog.txt", std::ios::out | std::ios::app);
+        if (!logFile.is_open()) {
+            EV << "Could not open log file for writing" << std::endl;
+        }
+    }
+}
+
+TraCIDemo11p::~TraCIDemo11p() {
+    if (logFile.is_open()) {
+        logFile.close();
     }
 }
 
@@ -64,6 +53,9 @@ void TraCIDemo11p::onWSM(BaseFrame1609_4* frame)
         wsm->setSerial(3);
         scheduleAt(simTime() + 2 + uniform(0.01, 0.2), wsm->dup());
     }
+
+    // Log the received message
+    logMessage("Received WSM: " + std::string(wsm->getDemoData()));
 }
 
 void TraCIDemo11p::handleSelfMsg(cMessage* msg)
@@ -111,9 +103,19 @@ void TraCIDemo11p::handlePositionUpdate(cObject* obj)
                 // send right away on CCH, because channel switching is disabled
                 sendDown(wsm);
             }
+
+            // Log the sent message
+            logMessage("Sent WSM: " + std::string(wsm->getDemoData()));
         }
     }
     else {
         lastDroveAt = simTime();
+    }
+}
+
+void TraCIDemo11p::logMessage(const std::string& message)
+{
+    if (logFile.is_open()) {
+        logFile << simTime() << ": " << message << std::endl;
     }
 }
