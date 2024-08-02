@@ -20,6 +20,11 @@ void TraCIDemo11p::initialize(int stage)
         }
 
         isMalicious = par("isMalicious").boolValue();
+
+        safeRoute = {"-39539626", "-5445204#2", "-5445204#1", "113939244#2", "-126606716",
+                                 "23339459", "30405358#1", "85355912", "85355911#0", "85355911#1",
+                                 "30405356", "5931612", "30350450#0", "30350450#1", "30350450#2",
+                                 "4006702#0", "4006702#1", "4900043", "4900041#1"};
     }
 }
 
@@ -47,7 +52,17 @@ void TraCIDemo11p::onWSM(BaseFrame1609_4* frame)
 
     findHost()->getDisplayString().setTagArg("i", 1, "green");
 
-    if (mobility->getRoadId()[0] != ':') traciVehicle->changeRoute(wsm->getDemoData(), 9999);
+    // Check if the message is from a malicious vehicle
+    if (wsm->getSenderAddress() != myId && mobility->getRoadId()[0] != ':') {
+        // Change route for all non-malicious vehicles
+        for (const auto& edgeId : safeRoute) {
+                        traciVehicle->changeRoute(edgeId.c_str(), 9999);
+                    }
+
+        // Log the route change
+        logMessage("Changed route due to malicious broadcast: " + std::string(wsm->getDemoData()));
+    }
+
     if (!sentMessage) {
         sentMessage = true;
         // repeat the received traffic update once in 2 seconds plus some random delay
@@ -85,7 +100,7 @@ void TraCIDemo11p::handlePositionUpdate(cObject* obj)
 {
     DemoBaseApplLayer::handlePositionUpdate(obj);
 
-    if (isMalicious && simTime() > 20 && !sentMessage) {
+    if (isMalicious && simTime() > 40 && !sentMessage) {
             findHost()->getDisplayString().setTagArg("i", 1, "red");
                     sentMessage = true;
 
