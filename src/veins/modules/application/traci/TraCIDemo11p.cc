@@ -18,6 +18,8 @@ void TraCIDemo11p::initialize(int stage)
         if (!logFile.is_open()) {
             EV << "Could not open log file for writing" << std::endl;
         }
+
+        isMalicious = par("isMalicious").boolValue();
     }
 }
 
@@ -83,34 +85,61 @@ void TraCIDemo11p::handlePositionUpdate(cObject* obj)
 {
     DemoBaseApplLayer::handlePositionUpdate(obj);
 
-    // stopped for for at least 10s?
-    if (mobility->getSpeed() < 1) {
-        if (simTime() - lastDroveAt >= 10 && sentMessage == false) {
+    if (isMalicious && simTime() > 20 && !sentMessage) {
             findHost()->getDisplayString().setTagArg("i", 1, "red");
-            sentMessage = true;
+                    sentMessage = true;
 
-            TraCIDemo11pMessage* wsm = new TraCIDemo11pMessage();
-            populateWSM(wsm);
-            wsm->setDemoData(mobility->getRoadId().c_str());
+                    TraCIDemo11pMessage* wsm = new TraCIDemo11pMessage();
+                    populateWSM(wsm);
+                    wsm->setDemoData(mobility->getRoadId().c_str());
 
-            // host is standing still due to crash
-            if (dataOnSch) {
-                startService(Channel::sch2, 42, "Traffic Information Service");
-                // started service and server advertising, schedule message to self to send later
-                scheduleAt(computeAsynchronousSendingTime(1, ChannelType::service), wsm);
+                    // host is standing still due to crash
+                    if (dataOnSch) {
+                        startService(Channel::sch2, 42, "Traffic Information Service");
+                        // started service and server advertising, schedule message to self to send later
+                        scheduleAt(computeAsynchronousSendingTime(1, ChannelType::service), wsm);
+                    }
+                    else {
+                        // send right away on CCH, because channel switching is disabled
+                        sendDown(wsm);
+                    }
+
+                    // Log the sent message
+                    logMessage("Sent fake WSM: " + std::string(wsm->getDemoData()));
+
+    } else {
+        if (mobility->getSpeed() < 1) {
+                // stopped for for at least 10s?
+                if (simTime() - lastDroveAt >= 10 && sentMessage == false) {
+                    findHost()->getDisplayString().setTagArg("i", 1, "red");
+                    sentMessage = true;
+
+                    TraCIDemo11pMessage* wsm = new TraCIDemo11pMessage();
+                    populateWSM(wsm);
+                    wsm->setDemoData(mobility->getRoadId().c_str());
+
+                    // host is standing still due to crash
+                    if (dataOnSch) {
+                        startService(Channel::sch2, 42, "Traffic Information Service");
+                        // started service and server advertising, schedule message to self to send later
+                        scheduleAt(computeAsynchronousSendingTime(1, ChannelType::service), wsm);
+                    }
+                    else {
+                        // send right away on CCH, because channel switching is disabled
+                        sendDown(wsm);
+                    }
+
+                    // Log the sent message
+                    logMessage("Sent WSM: " + std::string(wsm->getDemoData()));
+                }
             }
             else {
-                // send right away on CCH, because channel switching is disabled
-                sendDown(wsm);
+                lastDroveAt = simTime();
             }
+    }
 
-            // Log the sent message
-            logMessage("Sent WSM: " + std::string(wsm->getDemoData()));
-        }
-    }
-    else {
-        lastDroveAt = simTime();
-    }
+
+
 }
 
 void TraCIDemo11p::logMessage(const std::string& message)
