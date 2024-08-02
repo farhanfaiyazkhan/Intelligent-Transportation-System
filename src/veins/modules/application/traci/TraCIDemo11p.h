@@ -31,6 +31,10 @@ protected:
 
     std::ofstream logFile;
 
+private:
+    bool isMalicious;
+
+
 protected:
     void onWSM(BaseFrame1609_4* wsm) override;
     void onWSA(DemoServiceAdvertisment* wsa) override;
