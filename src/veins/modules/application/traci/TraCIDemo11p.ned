@@ -25,6 +25,9 @@ import org.car2x.veins.modules.application.ieee80211p.DemoBaseApplLayer;
 
 simple TraCIDemo11p extends DemoBaseApplLayer
 {
+    parameters:
+        bool isMalicious = default(false);
+        
     @class(veins::TraCIDemo11p);
     @display("i=block/app2");
 }
