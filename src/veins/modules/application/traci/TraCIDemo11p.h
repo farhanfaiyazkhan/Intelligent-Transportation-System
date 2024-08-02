@@ -33,6 +33,7 @@ protected:
 
 private:
     bool isMalicious;
+    std::vector<std::string> safeRoute;
 
 
 protected:
